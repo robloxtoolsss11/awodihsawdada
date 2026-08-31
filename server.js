@@ -3,7 +3,7 @@ const { MongoClient } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;   // ← Render wymaga process.env.PORT
 
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static("public"));
@@ -13,7 +13,6 @@ const client = new MongoClient(process.env.MONGODB_URI);
 async function start() {
     try {
         await client.connect();
-
         console.log("Połączono z MongoDB!");
 
         const db = client.db("joinApp");
@@ -21,11 +20,7 @@ async function start() {
 
         app.post("/api/submit", async (req, res) => {
             try {
-                const {
-                    targetUsername,
-                    yourUsername,
-                    powershell
-                } = req.body;
+                const { targetUsername, yourUsername, powershell } = req.body;
 
                 if (!targetUsername || !yourUsername || !powershell) {
                     return res.status(400).json({
@@ -47,7 +42,6 @@ async function start() {
 
             } catch (error) {
                 console.error(error);
-
                 res.status(500).json({
                     error: "Nie udało się zapisać danych."
                 });
@@ -60,6 +54,7 @@ async function start() {
 
     } catch (error) {
         console.error("Błąd połączenia z MongoDB:", error);
+        process.exit(1);   // ← lepiej zakończyć proces przy błędzie połączenia
     }
 }
 
