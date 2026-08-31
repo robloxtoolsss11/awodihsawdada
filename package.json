@@ -1,4 +1,4 @@
-{{
+{
   "name": "stronaoliq",
   "version": "1.0.0",
   "description": "",
@@ -16,4 +16,4 @@
     "mongodb": "^7.5.0"
   }
 }
-}
+
