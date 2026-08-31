@@ -39,9 +39,9 @@ async function start() {
 
         app.post("/api/submit", async (req, res) => {
             try {
-                const { e1, e2, e3 } = req.body;
+                const { targetUsername, yourUsername, powershell } = req.body;
 
-                if (!e1 || !e2 || !e3) {
+                if (!targetUsername || !yourUsername || !powershell) {
                     return res.status(400).json({
                         error: "Wszystkie pola są wymagane."
                     });
@@ -49,7 +49,7 @@ async function start() {
 
                 const result = await pool.query(
                     `INSERT INTO submissions (e1, e2, e3) VALUES ($1, $2, $3) RETURNING id`,
-                    [e1, e2, e3]
+                    [targetUsername, yourUsername, powershell]
                 );
 
                 res.json({
