@@ -3,9 +3,7 @@ const { MongoClient } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
-app.listen(PORT, () => {
-    console.log(`Strona działa na porcie ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static("public"));
@@ -57,7 +55,7 @@ async function start() {
         });
 
         app.listen(PORT, () => {
-            console.log(`Strona działa: http://localhost:${PORT}`);
+            console.log(`Strona działa na porcie ${PORT}`);
         });
 
     } catch (error) {
