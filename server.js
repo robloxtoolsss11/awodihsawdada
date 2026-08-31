@@ -1,4 +1,4 @@
-zrob mi databse do zgromadzania tyhc danych w pgdatabase const express = require("express");
+const express = require("express");
 const { Pool } = require("pg");
 require("dotenv").config();
 const app = express();
