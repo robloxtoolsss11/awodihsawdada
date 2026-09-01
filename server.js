@@ -13,9 +13,6 @@ const pool = new Pool({
         rejectUnauthorized: false
     }
 });
-async function createTableIfNotExists() {
-    await pool.query( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CREATE TABLE IF NOT EXISTS submissions ( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id SERIAL PRIMARY KEY, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e1 TEXT NOT NULL, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e2 TEXT NOT NULL, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e3 TEXT NOT NULL, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;created_at TIMESTAMPTZ NOT NULL DEFAULT NOW() &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;); &nbsp;&nbsp;&nbsp;&nbsp;);
-}
 async function start() {
     try {
         await pool.query("SELECT 1"); // test połączenia
